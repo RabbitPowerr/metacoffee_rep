@@ -14,6 +14,7 @@ order = {
     'coffee': None,
     'pattern': None,
     'address': None,
+    'time': 0,
     'isorder': None
 }
 
@@ -25,7 +26,7 @@ main_menu.row_width = 3
 main_menu.add(types.InlineKeyboardButton(text='Выбрать кофе', callback_data='1choose_coffee'))
 main_menu.add(types.InlineKeyboardButton(text='Выбрать узор', callback_data='2choose_pattern'))
 main_menu.add(types.InlineKeyboardButton(text='Ввести адрес доставки', callback_data='3input_address'))
-# добавить кнопку для указания времени доставки
+main_menu.add(types.InlineKeyboardButton(text='Ввести время доставки', callback_data='4choose_time'))
 main_menu.add(types.InlineKeyboardButton(text='Оформить заказ', callback_data='5create_order'))
 main_menu.add(types.InlineKeyboardButton(text='Отменить заказ', callback_data='6cansel_order'))
 
@@ -95,13 +96,13 @@ def callback_worker(call):
         bot.edit_message_reply_markup(call.from_user.id, call.message.message_id)
         if call.data[1:] == 'choose_coffee':
             choose_coffe = types.InlineKeyboardMarkup()
-            choose_coffe.add(types.InlineKeyboardButton(text='Латте',           callback_data='1сoffee_1'))
-            choose_coffe.add(types.InlineKeyboardButton(text='Эспрессо',        callback_data='1сoffee_2'))
-            choose_coffe.add(types.InlineKeyboardButton(text='Мокко',           callback_data='1сoffee_3'))
-            choose_coffe.add(types.InlineKeyboardButton(text='Капучино',        callback_data='1сoffee_4'))
-            choose_coffe.add(types.InlineKeyboardButton(text='Горячий шоколад', callback_data='1сoffee_5'))
+            choose_coffe.add(types.InlineKeyboardButton(text='Латте',           callback_data='1coffee_1'))
+            choose_coffe.add(types.InlineKeyboardButton(text='Эспрессо',        callback_data='1coffee_2'))
+            choose_coffe.add(types.InlineKeyboardButton(text='Мокко',           callback_data='1coffee_3'))
+            choose_coffe.add(types.InlineKeyboardButton(text='Капучино',        callback_data='1coffee_4'))
+            choose_coffe.add(types.InlineKeyboardButton(text='Горячий шоколад', callback_data='1coffee_5'))
             bot.send_message(call.from_user.id, text='Выберите кофе', reply_markup=choose_coffe)
-        elif call.data[1:] == 'сoffee_1':
+        elif call.data[1:] == 'coffee_1':
             orders[call.from_user.id]['coffee'] = 'Латте'
             bot.send_message(call.message.chat.id, text='Оформление заказа', reply_markup=main_menu)
         elif call.data[1:] == 'coffee_2':
@@ -147,7 +148,40 @@ def callback_worker(call):
         # типо того: bot.register_next_handler(function name)
         # вводи город, улицу и тд
         pass
-    # добавить elif для call.data[0] == '4' для времени
+    elif call.data[0] == '4':
+        bot.edit_message_reply_markup(call.from_user.id, call.message.message_id)
+        choose_time = types.InlineKeyboardMarkup()
+        choose_time.add(types.InlineKeyboardButton(text='+5 минут',           callback_data='4сhoose_time_1'))
+        choose_time.add(types.InlineKeyboardButton(text='+15 минут',          callback_data='4сhoose_time_2'))
+        choose_time.add(types.InlineKeyboardButton(text='+30 минут',          callback_data='4сhoose_time_3'))
+        choose_time.add(types.InlineKeyboardButton(text='+45 минут',          callback_data='4сhoose_time_4'))
+        choose_time.add(types.InlineKeyboardButton(text='+60 минут',          callback_data='4сhoose_time_5'))
+        choose_time.add(types.InlineKeyboardButton(text='Завершить',          callback_data='4сhoose_time_6'))
+        if call.data[1:] == 'choose_time':
+            bot.send_message(call.from_user.id, text='Введите время', reply_markup=choose_time)
+        elif call.data[1:] == 'сhoose_time_1':
+            orders[call.from_user.id]['time'] = orders[call.from_user.id]['time'] + 5
+            mes = 'Доставить вам кофе через ' + str(orders[call.from_user.id]['time']) + ' минут?'
+            bot.send_message(call.message.chat.id, text='Ввод времени\n' + mes, reply_markup=choose_time)
+        elif call.data[1:] == 'сhoose_time_2':
+            orders[call.from_user.id]['time'] = orders[call.from_user.id]['time'] + 15
+            mes = 'Доставить вам кофе через ' + str(orders[call.from_user.id]['time']) + ' минут?'
+            bot.send_message(call.message.chat.id, text='Ввод времени\n' + mes, reply_markup=choose_time)
+        elif call.data[1:] == 'сhoose_time_3':
+            orders[call.from_user.id]['time'] = orders[call.from_user.id]['time'] + 30
+            mes = 'Доставить вам кофе через ' + str(orders[call.from_user.id]['time']) + ' минут?'
+            bot.send_message(call.message.chat.id, text='Ввод времени\n' + mes, reply_markup=choose_time)
+        elif call.data[1:] == 'сhoose_time_4':
+            orders[call.from_user.id]['time'] = orders[call.from_user.id]['time'] + 45
+            mes = 'Доставить вам кофе через ' + str(orders[call.from_user.id]['time']) + ' минут?'
+            bot.send_message(call.message.chat.id, text='Ввод времени\n' + mes, reply_markup=choose_time)
+        elif call.data[1:] == 'сhoose_time_5':
+            orders[call.from_user.id]['time'] = orders[call.from_user.id]['time'] + 60
+            mes = 'Доставить вам кофе через ' + str(orders[call.from_user.id]['time']) + ' минут?'
+            bot.send_message(call.message.chat.id, text='Ввод времени\n' + mes, reply_markup=choose_time)
+        elif call.data[1:] == 'сhoose_time_6':
+            mes = 'Доставим вам кофе через ' + str(orders[call.from_user.id]['time']) + ' минут'
+            bot.send_message(call.message.chat.id, text=mes, reply_markup=main_menu)
     elif call.data[0] == '5':
         # принимаем заказ
         if orders[call.message.chat.id]['coffee'] == None:
