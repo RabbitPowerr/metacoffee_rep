@@ -15,11 +15,11 @@ order = {
     'pattern': None,
     'address': None,
     'time': 0,
-    'isorder': None
+    'isorder': None,
+    'is_address': False
 }
-chat_state = 'Main_menu'
+
 commands = ['/help', '/order']
-messages = ['привет', 'пока', 'павел гандон']
 
 main_menu = types.InlineKeyboardMarkup()
 main_menu.row_width = 3
@@ -37,24 +37,21 @@ def normalize(text):
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    global commands, messages, orders,chat_state
-    if chat_state == 'Main_menu':
+    global commands, messages, orders
+    if message.from_user.id not in orders.keys()  or  orders[message.from_user.id]['is_address'] == False:
         if message.from_user.id in orders.keys():
             if orders[message.from_user.id]['isorder'] == True:
                 return
         text = normalize(message.text)
         if text in commands:
             parse_command(message)
-        elif text in messages:
-            parse_message(message)
         else:
             bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
-    elif chat_state == 'Address':
+    elif orders[message.from_user.id]['is_address'] == True:
         text = message.text
         if(check_adress(text)):
-            orders[message.from_user.id]['address']=text
-            chat_state = 'Main_menu'
-
+            orders[message.from_user.id]['address'] =text
+            orders[message.from_user.id]['is_address'] = False
 
 def check_adress(line):
     if line == None :
@@ -82,10 +79,7 @@ def parse_command(command):
         str_commands = ''
         for comm in commands:
             str_commands += comm + ', '
-        str_messages = ''
-        for mess in messages:
-            str_messages += mess + ', '
-        bot.send_message(command.from_user.id, 'Распознаваемые команды: ' + str_commands + ' Распознаваемые сообщения: ' + str_messages)
+        bot.send_message(command.from_user.id, 'Распознаваемые команды: ' + str_commands)
     elif text == '/order':
         orders[command.from_user.id] = order
         orders[command.from_user.id]['isorder'] = True
@@ -96,19 +90,10 @@ def parse_command(command):
         keyboard.add(key_no)
         bot.send_message(command.from_user.id, text='Хотите сделать заказ?', reply_markup=keyboard)
 
-# убрать/закодировать павла + всякий текст
-def parse_message(message):
-    text = normalize(message.text)
-    if text == 'привет':
-        bot.send_message(message.from_user.id, 'Че надо')
-    elif text == 'пока':
-        bot.send_message(message.from_user.id, 'Больше мне не пиши')
-    elif text == 'павел гандон':
-        bot.send_message(message.from_user.id, 'Истинно так')
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    global orders, order, main_menu,chat_state
+    global orders, order, main_menu
     if call.data[0] == '0':
         # создание заказа
         bot.edit_message_reply_markup(call.from_user.id, call.message.message_id)
@@ -174,12 +159,12 @@ def callback_worker(call):
         if call.data[1:] == 'enter_address':
             enter_address = types.InlineKeyboardMarkup()
             enter_address.add(types.InlineKeyboardButton(text='Ввести адрес самому',           callback_data='3enter_address_1'))
-            enter_address.add(types.InlineKeyboardButton(text='Использовать геолокацию(доступно только на смартфонах)',callback_data='3enter_address_2',request_location=T))
+            enter_address.add(types.InlineKeyboardButton(text='Использовать геолокацию(доступно только на смартфонах)',callback_data='3enter_address_2'))
             bot.send_message(call.from_user.id, text='Выберите как вы хотите ввести адрес', reply_markup=enter_address)
         elif(call.data[1:] == 'enter_address_1'):
             enter_address_man = types.InlineKeyboardMarkup()
             orders[call.from_user.id]['address']=None
-            chat_state = 'Address'
+            orders[call.from_user.id]['is_address'] = True
             enter_address_man.add(types.InlineKeyboardButton(text='Принять',           callback_data='3enter_address_3'))
             bot.send_message(call.message.chat.id, text='Введите адрес в формате <Город> <Улица> <Дом>', reply_markup=enter_address_man)
         elif(call.data[1:] == 'enter_address_2'):
@@ -224,8 +209,7 @@ def callback_worker(call):
             mes = 'Доставить вам кофе через ' + str(orders[call.from_user.id]['time']) + ' минут?'
             bot.send_message(call.message.chat.id, text='Ввод времени\n' + mes, reply_markup=choose_time)
         elif call.data[1:] == 'сhoose_time_6':
-            mes = 'Доставим вам кофе через ' + str(orders[call.from_user.id]['time']) + ' минут'
-            bot.send_message(call.message.chat.id, text=mes, reply_markup=main_menu)
+            bot.send_message(call.message.chat.id, text='Оформление заказа', reply_markup=main_menu)
     elif call.data[0] == '5':
         # принимаем заказ
         if orders[call.message.chat.id]['coffee'] == None:
@@ -234,14 +218,23 @@ def callback_worker(call):
             bot.send_message(call.message.chat.id, 'Вы не выбрали узор')
         elif orders[call.message.chat.id]['address'] == None:
             bot.send_message(call.message.chat.id, 'Вы не указали адрес доставки')
+        elif orders[call.message.chat.id]['time'] == 0:
+            bot.send_message(call.message.chat.id, 'Вы не указали время доставки')
         else:
             # вывести полную инфу о заказе
-            bot.send_message(call.message.chat.id, 'Заказ принят')
+            result = 'Ваш заказ принят :'
+            result += '\nВаш коффе '+orders[call.message.chat.id]['coffee']
+            result += '\nВаш рисунок '+orders[call.message.chat.id]['pattern']
+            result += '\nВремя доставки через '+str(orders[call.message.chat.id]['time'])+' минут'
+            result += '\nАдрес доставки '+orders[call.message.chat.id]['address']
+            
+            orders.pop(call.from_user.id)
             bot.edit_message_reply_markup(call.from_user.id, call.message.message_id)
+            bot.send_message(call.message.chat.id, result)
     elif call.data[0] == '6':
         # отменяем заказ
         orders.pop(call.from_user.id)
         bot.edit_message_reply_markup(call.from_user.id, call.message.message_id)
-    print(orders[call.from_user.id])
+
 
 bot.polling(none_stop=True, interval=0)
